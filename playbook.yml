@@ -1,0 +1,25 @@
+---
+- hosts: all
+  sudo: yes
+  roles:
+  - { role: ansiblebit.oracle-java,
+      oracle_java_set_as_default: yes }
+  tasks:
+  - name: Ensure htop is installed
+    apt: name=htop state=present
+  - name: Create TeamCity group
+    group: name=teamcity state=present
+  - name: Create TeamCity user
+    user: name=teamcity groups=teamcity
+  - name: TeamCity Directory
+    file: path=/opt/jetbrains state=directory owner=teamcity group=teamcity
+  - name: TeamCity Download
+    script: ./download-tc.sh creates=/opt/jetbrains/TeamCity/bin/runAll.sh
+  - name: TeamCity Folder owner
+    shell: chown -R teamcity:teamcity /opt/jetbrains/TeamCity
+  - name: Copy InitD script
+    copy: src=./initd-tc.sh dest=/etc/init.d/teamcity mode="a+x"
+  - name: Register InitD script
+    shell: update-rc.d teamcity defaults
+  - name: Run TeamCity
+    service: name=teamcity state=restarted enabled=yes
